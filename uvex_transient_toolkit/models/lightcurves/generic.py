@@ -331,8 +331,10 @@ class GaussianRisePowerLawLightcurve(Lightcurve):
     luminous fast blue optical transients) rather than a sharply cut-off
     pulse.
 
-    Unlike `GREDLightcurve`, ``t_peak`` is an independent free parameter
-    here rather than fixed at :math:`5\sigma_\mathrm{rise}`.
+    ``sigma_rise`` is not itself a free parameter -- it is fixed at
+    :math:`\sigma_\mathrm{rise} = t_\mathrm{peak}/5`, one fifth of the time
+    to peak, the same ratio `GREDLightcurve` fixes between the two
+    quantities.
 
     .. rubric:: Parameters
 
@@ -351,9 +353,6 @@ class GaussianRisePowerLawLightcurve(Lightcurve):
        * - ``t_peak``
          - :math:`t_\mathrm{peak}`
          - Time of peak luminosity since explosion.
-       * - ``sigma_rise``
-         - :math:`\sigma_\mathrm{rise}`
-         - Gaussian width of the rise.
        * - ``decline_index``
          - :math:`\alpha_\mathrm{decline}`
          - Positive post-peak power-law decline index.
@@ -374,12 +373,6 @@ class GaussianRisePowerLawLightcurve(Lightcurve):
             description="Time of peak luminosity since explosion.",
             latex=r"t_\mathrm{peak}",
         ),
-        "sigma_rise": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.5),
-            scale=1.0 * u.day,
-            description="Gaussian width of the rise.",
-            latex=r"\sigma_\mathrm{rise}",
-        ),
         "decline_index": Parameter(
             prior=LogNormalPrior(mean=0.0, sigma=0.5),
             scale=1.5 * u.dimensionless_unscaled,
@@ -398,9 +391,9 @@ class GaussianRisePowerLawLightcurve(Lightcurve):
         *,
         amplitude: CGSParameterValue,
         t_peak: CGSParameterValue,
-        sigma_rise: CGSParameterValue,
         decline_index: CGSParameterValue,
     ) -> NDArray[np.float64]:
+        sigma_rise = t_peak / 5
         log_rise = -0.5 * ((t - t_peak) / sigma_rise) ** 2
 
         # `t_peak` is strictly positive (its prior's support excludes 0), so
@@ -440,6 +433,11 @@ class GaussianRiseBrokenPowerLawLightcurve(Lightcurve):
     ``t_break`` is assumed to exceed ``t_peak``, although this ordering is
     not enforced by the model itself.
 
+    ``sigma_rise`` is not itself a free parameter -- it is fixed at
+    :math:`\sigma_\mathrm{rise} = t_\mathrm{peak}/5`, one fifth of the time
+    to peak, the same ratio `GREDLightcurve` fixes between the two
+    quantities.
+
     .. rubric:: Parameters
 
     The light curve parameters are summarized below.
@@ -457,9 +455,6 @@ class GaussianRiseBrokenPowerLawLightcurve(Lightcurve):
        * - ``t_peak``
          - :math:`t_\mathrm{peak}`
          - Time of peak luminosity since explosion.
-       * - ``sigma_rise``
-         - :math:`\sigma_\mathrm{rise}`
-         - Gaussian width of the rise.
        * - ``decline_index_1``
          - :math:`\alpha_1`
          - Positive power-law decline index between ``t_peak`` and ``t_break``.
@@ -485,12 +480,6 @@ class GaussianRiseBrokenPowerLawLightcurve(Lightcurve):
             scale=5.0 * u.day,
             description="Time of peak luminosity since explosion.",
             latex=r"t_\mathrm{peak}",
-        ),
-        "sigma_rise": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.5),
-            scale=1.0 * u.day,
-            description="Gaussian width of the rise.",
-            latex=r"\sigma_\mathrm{rise}",
         ),
         "decline_index_1": Parameter(
             prior=LogNormalPrior(mean=0.0, sigma=0.5),
@@ -522,11 +511,11 @@ class GaussianRiseBrokenPowerLawLightcurve(Lightcurve):
         *,
         amplitude: CGSParameterValue,
         t_peak: CGSParameterValue,
-        sigma_rise: CGSParameterValue,
         decline_index_1: CGSParameterValue,
         decline_index_2: CGSParameterValue,
         t_break: CGSParameterValue,
     ) -> NDArray[np.float64]:
+        sigma_rise = t_peak / 5
         log_rise = -0.5 * ((t - t_peak) / sigma_rise) ** 2
 
         # `t_peak`/`t_break` are strictly positive (their priors' support

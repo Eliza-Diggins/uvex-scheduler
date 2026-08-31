@@ -8,7 +8,7 @@ from astropy import units as u
 from uvex_transient_toolkit.models._typing import CGSParameterValue, FloatArray
 from uvex_transient_toolkit.models.core._base import SpectralModel
 from uvex_transient_toolkit.models.core._parameters import Parameter
-from uvex_transient_toolkit.models.core.priors import LogNormalPrior, NormalPrior
+from uvex_transient_toolkit.models.core.priors import LogNormalPrior, NormalPrior, UniformPrior
 from uvex_transient_toolkit.models.lightcurves.generic import GaussianRisePowerLawLightcurve
 from uvex_transient_toolkit.models.spectra.thermal import BlackbodySpectrum
 from uvex_transient_toolkit.models._utils import to_cgs_value
@@ -33,15 +33,17 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
 
     where :math:`S_\mathrm{BB}` is the normalized blackbody spectrum provided
     by :class:`~uvex_transient_toolkit.models.spectra.thermal.BlackbodySpectrum`.
-    The photosphere follows the same cooling law as
+    The photosphere follows the same cooling-law form as
     :class:`~uvex_transient_toolkit.models.supernovae.VillarCoolingBlackbodySED`,
+    but with the cooling timescale fixed to the light curve's own
+    :math:`t_\mathrm{peak}` rather than a separate free parameter,
 
     .. math::
 
-        T(t) = T_\mathrm{floor} + (T_0 - T_\mathrm{floor})(1 + t/\tau_T)^{-\alpha_T},
+        T(t) = T_\mathrm{floor} + (T_0 - T_\mathrm{floor})(1 + t/t_\mathrm{peak})^{-\alpha_T},
 
     which has the correct :math:`T \to T_\mathrm{floor} + (T_0 -
-    T_\mathrm{floor})(t/\tau_T)^{-\alpha_T}` power-law asymptote at late times.
+    T_\mathrm{floor})(t/t_\mathrm{peak})^{-\alpha_T}` power-law asymptote at late times.
 
     Both this model's default priors and its choice of light curve/cooling-law
     shape are informed by Ho & Lu et al. (2026)'s sample of bolometric
@@ -68,7 +70,8 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
 
     Consequently, :meth:`_eval_bolometric` delegates directly to
     :class:`~uvex_transient_toolkit.models.lightcurves.generic.GaussianRisePowerLawLightcurve`,
-    while :meth:`_eval_spectrum` evaluates
+    which fixes the Gaussian rise width at :math:`t_\mathrm{peak}/5` rather
+    than treating it as a separate free parameter, while :meth:`_eval_spectrum` evaluates
     :class:`~uvex_transient_toolkit.models.spectra.thermal.BlackbodySpectrum` at
     the time-dependent temperature :math:`T(t)`. No numerical frequency
     integration is required to recover the bolometric luminosity.
@@ -90,9 +93,6 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
        * - ``t_peak``
          - :math:`t_\mathrm{peak}`
          - Time of peak luminosity since explosion.
-       * - ``sigma_rise``
-         - :math:`\sigma_\mathrm{rise}`
-         - Gaussian width of the rise.
        * - ``decline_index``
          - :math:`\alpha_\mathrm{decline}`
          - Positive post-peak power-law decline index of the bolometric
@@ -105,9 +105,6 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
          - :math:`T_\mathrm{floor}`
          - Asymptotic late-time photospheric temperature (T(t) -> T_floor
            as t -> infinity).
-       * - ``tau_T``
-         - :math:`\tau_T`
-         - Photospheric cooling timescale.
        * - ``alpha_T``
          - :math:`\alpha_T`
          - Late-time photospheric cooling power-law index.
@@ -118,13 +115,17 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
     ``t_peak``/``decline_index``/``alpha_T``, Ho & Lu et al. (2026) does not
     report characteristic absolute temperature values for this sample.
 
+    The photospheric cooling timescale is not a separate free parameter --
+    it is fixed to the light curve's own ``t_peak``, the same coupling used
+    for the Gaussian rise width (see above).
+
     The temperature law assumes :math:`T_0 > T_\mathrm{floor}` for a cooling
     photosphere, although this ordering is not enforced by the model itself.
     """
 
     _DEFAULT_PARAMETERS: ClassVar[dict[str, Parameter]] = {
         "amplitude": Parameter(
-            prior=NormalPrior(mean=44.65, sigma=0.35),
+            prior=NormalPrior(mean=44.5, sigma=0.1),
             scale=1.0 * u.erg / u.s,
             transform="log10",
             description="Peak bolometric luminosity. log10(L_0/[erg/s]) ~ N(44.65, 0.35^2), "
@@ -132,21 +133,15 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
             latex=r"L_0",
         ),
         "t_peak": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.2),
-            scale=10.0 * u.day,
+            prior=LogNormalPrior(mean=0.69, sigma=0.06),
+            scale=1.0 * u.day,
             description="Time of peak bolometric luminosity since explosion. Log-normal around "
             "10 d with fairly small scatter (Ho & Lu et al. 2026).",
             latex=r"t_\mathrm{peak}",
         ),
-        "sigma_rise": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.3),
-            scale=2.0 * u.day,
-            description="Gaussian width of the pre-peak rise.",
-            latex=r"\sigma_\mathrm{rise}",
-        ),
         "decline_index": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.15),
-            scale=3.0 * u.dimensionless_unscaled,
+            prior=UniformPrior(lower=2, upper=4),
+            scale=1 * u.dimensionless_unscaled,
             description="Positive post-peak power-law decline index; L_bol ~ t^-decline_index. "
             "Late-time light curves are broadly consistent with a t^-3 decline (Ho & Lu et al. 2026).",
             latex=r"\alpha_\mathrm{decline}",
@@ -158,21 +153,16 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
             latex=r"T_0",
         ),
         "T_floor": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.1),
-            scale=1.2e4 * u.K,
-            description="Asymptotic late-time photospheric temperature (T(t) -> T_floor as t -> infinity).",
+            prior=LogNormalPrior(mean=0.0, sigma=0.01),
+            scale=1e4 * u.K,
+            description="Asymptotic late-time photospheric temperature (T(t) -> T_floor as t -> infinity). "
+            "Log-normal, tightly centered on 1e4 K.",
             latex=r"T_\mathrm{floor}",
         ),
-        "tau_T": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.4),
-            scale=5.0 * u.day,
-            description="Photospheric cooling timescale.",
-            latex=r"\tau_T",
-        ),
         "alpha_T": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.4),
-            scale=1.0 / 3.0,
-            description="Late-time photospheric cooling power-law index; T ~ t^-alpha_T for t >> tau_T. "
+            prior=UniformPrior(lower=0, upper=1/3),
+            scale=1,
+            description="Late-time photospheric cooling power-law index; T ~ t^-alpha_T for t >> t_peak. "
             "~1/3 is a reasonable fit for most events (e.g. AT2018cow); CSS161010 was closer to "
             "constant temperature (Ho & Lu et al. 2026).",
             latex=r"\alpha_T",
@@ -189,12 +179,12 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
         *,
         T0: CGSParameterValue,
         T_floor: CGSParameterValue,
-        tau_T: CGSParameterValue,
+        t_peak: CGSParameterValue,
         alpha_T: CGSParameterValue,
         **_ignored: CGSParameterValue,
     ) -> FloatArray:
-        r""":math:`T(t) = T_\mathrm{floor} + (T_0 - T_\mathrm{floor})(1 + t/\tau_T)^{-\alpha_T}`."""
-        return T_floor + (T0 - T_floor) * (1.0 + t / tau_T) ** (-alpha_T)
+        r""":math:`T(t) = T_\mathrm{floor} + (T_0 - T_\mathrm{floor})(1 + t/t_\mathrm{peak})^{-\alpha_T}`."""
+        return T_floor + (T0 - T_floor) * (1.0 + t / t_peak) ** (-alpha_T)
 
     @classmethod
     def temperature(cls, t: FloatArray, **parameters: CGSParameterValue) -> FloatArray:

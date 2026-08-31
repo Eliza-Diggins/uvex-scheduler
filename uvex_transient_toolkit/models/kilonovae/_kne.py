@@ -35,10 +35,9 @@ class KilonovaCoolingBlackbodySED(SpectralModel):
          - Peak bolometric luminosity.
        * - ``t_peak``
          - :math:`t_\mathrm{peak}`
-         - Time of peak luminosity since merger.
-       * - ``sigma_rise``
-         - :math:`\sigma_\mathrm{rise}`
-         - Gaussian width of the rise; also the temperature cooling timescale.
+         - Time of peak luminosity since merger. Also sets the Gaussian rise
+           width (:math:`t_\mathrm{peak}/5`) and the temperature cooling
+           timescale.
        * - ``decline_index_1``
          - :math:`\alpha_1`
          - Positive early-time post-peak power-law decline index.
@@ -84,13 +83,6 @@ class KilonovaCoolingBlackbodySED(SpectralModel):
             "never observed for GW170817 (Cowperthwaite et al. 2017).",
             latex=r"t_\mathrm{peak}",
         ),
-        "sigma_rise": Parameter(
-            prior=LogNormalPrior(mean=-0.69, sigma=0.05),
-            scale=1.0 * u.day,
-            description="Gaussian width of the rise (\"rise scale\"); also used as the "
-            "temperature cooling timescale. log(sigma_rise/day) ~ N(-0.69, 0.05^2), ~0.5 d.",
-            latex=r"\sigma_\mathrm{rise}",
-        ),
         "decline_index_1": Parameter(
             prior=UniformPrior(0.8, 1.2),
             scale=1.0 * u.dimensionless_unscaled,
@@ -133,7 +125,7 @@ class KilonovaCoolingBlackbodySED(SpectralModel):
             prior=UniformPrior(0.3, 0.7),
             scale=1.0 * u.dimensionless_unscaled,
             description="Early-time photospheric cooling power-law index; "
-            "T ~ t^-alpha_T for t << sigma_rise. ~0.5 (Waxman et al. 2018).",
+            "T ~ t^-alpha_T for t << t_peak/5. ~0.5 (Waxman et al. 2018).",
             latex=r"\alpha_T",
         ),
     }
@@ -148,11 +140,12 @@ class KilonovaCoolingBlackbodySED(SpectralModel):
         *,
         T0: CGSParameterValue,
         T_floor: CGSParameterValue,
-        sigma_rise: CGSParameterValue,
+        t_peak: CGSParameterValue,
         alpha_T: CGSParameterValue,
         **_ignored: CGSParameterValue,
     ) -> FloatArray:
-        r""":math:`T(t) = T_\mathrm{floor} + (T_0 - T_\mathrm{floor})(1 + t/\sigma_\mathrm{rise})^{-\alpha_T}`."""
+        r""":math:`T(t) = T_\mathrm{floor} + (T_0 - T_\mathrm{floor})(1 + t/(t_\mathrm{peak}/5))^{-\alpha_T}`."""
+        sigma_rise = t_peak / 5
         return T_floor + (T0 - T_floor) * (1.0 + t / sigma_rise) ** (-alpha_T)
 
     @classmethod
