@@ -16,6 +16,7 @@ __all__ = [
     "FREDLightcurve",
     "GREDLightcurve",
     "GaussianPulseLightcurve",
+    "GaussianRiseBrokenPowerLawLightcurve",
     "GaussianRisePowerLawLightcurve",
     "LogNormalPulseLightcurve",
     "PlateauPowerLawLightcurve",
@@ -410,6 +411,141 @@ class GaussianRisePowerLawLightcurve(Lightcurve):
             log_decline = -decline_index * np.log(t / t_peak)
 
         return np.log(amplitude) + np.where(t <= t_peak, log_rise, log_decline)
+
+
+class GaussianRiseBrokenPowerLawLightcurve(Lightcurve):
+    r"""
+    A Gaussian rise followed by a broken power-law decline, peaked at ``t_peak``.
+
+    .. math::
+
+        L(t) = A \times \begin{cases}
+            \exp\left(-\dfrac{(t - t_\mathrm{peak})^2}{2\sigma_\mathrm{rise}^2}\right)
+                & t \le t_\mathrm{peak} \\[4pt]
+            \left(\dfrac{t}{t_\mathrm{peak}}\right)^{-\alpha_1}
+                & t_\mathrm{peak} < t \le t_\mathrm{break} \\[4pt]
+            \left(\dfrac{t_\mathrm{break}}{t_\mathrm{peak}}\right)^{-\alpha_1}
+            \left(\dfrac{t}{t_\mathrm{break}}\right)^{-\alpha_2}
+                & t > t_\mathrm{break}
+        \end{cases}
+
+    Extends `GaussianRisePowerLawLightcurve` with a second, steeper power-law
+    segment past a break time ``t_break``. Every branch agrees exactly at its
+    boundary, by construction: :math:`L(t_\mathrm{peak}) = A`, and the two
+    decline branches meet at :math:`t_\mathrm{break}` without a jump. Useful
+    for transients whose late-time decline steepens relative to the
+    early-time behavior -- e.g. a kilonova's blue/early ejecta component
+    fading faster once it becomes optically thin.
+
+    ``t_break`` is assumed to exceed ``t_peak``, although this ordering is
+    not enforced by the model itself.
+
+    .. rubric:: Parameters
+
+    The light curve parameters are summarized below.
+
+    .. list-table::
+       :header-rows: 1
+       :widths: 18 18 64
+
+       * - Parameter
+         - Symbol
+         - Description
+       * - ``amplitude``
+         - :math:`A`
+         - Peak bolometric luminosity.
+       * - ``t_peak``
+         - :math:`t_\mathrm{peak}`
+         - Time of peak luminosity since explosion.
+       * - ``sigma_rise``
+         - :math:`\sigma_\mathrm{rise}`
+         - Gaussian width of the rise.
+       * - ``decline_index_1``
+         - :math:`\alpha_1`
+         - Positive power-law decline index between ``t_peak`` and ``t_break``.
+       * - ``decline_index_2``
+         - :math:`\alpha_2`
+         - Positive power-law decline index past ``t_break``.
+       * - ``t_break``
+         - :math:`t_\mathrm{break}`
+         - Time at which the decline steepens from :math:`\alpha_1` to :math:`\alpha_2`.
+    """
+
+    _LIGHTCURVE_TYPE = "bolometric"
+
+    _DEFAULT_PARAMETERS: ClassVar[dict[str, Parameter]] = {
+        "amplitude": Parameter(
+            prior=LogNormalPrior(mean=0.0, sigma=0.5),
+            scale=1e43 * _BOL_LUM_UNIT,
+            description="Peak bolometric luminosity.",
+            latex=r"A",
+        ),
+        "t_peak": Parameter(
+            prior=LogNormalPrior(mean=0.0, sigma=0.5),
+            scale=5.0 * u.day,
+            description="Time of peak luminosity since explosion.",
+            latex=r"t_\mathrm{peak}",
+        ),
+        "sigma_rise": Parameter(
+            prior=LogNormalPrior(mean=0.0, sigma=0.5),
+            scale=1.0 * u.day,
+            description="Gaussian width of the rise.",
+            latex=r"\sigma_\mathrm{rise}",
+        ),
+        "decline_index_1": Parameter(
+            prior=LogNormalPrior(mean=0.0, sigma=0.5),
+            scale=1.0 * u.dimensionless_unscaled,
+            description="Positive power-law decline index between t_peak and t_break.",
+            latex=r"\alpha_1",
+        ),
+        "decline_index_2": Parameter(
+            prior=LogNormalPrior(mean=0.0, sigma=0.5),
+            scale=3.0 * u.dimensionless_unscaled,
+            description="Positive power-law decline index past t_break.",
+            latex=r"\alpha_2",
+        ),
+        "t_break": Parameter(
+            prior=LogNormalPrior(mean=0.0, sigma=0.5),
+            scale=10.0 * u.day,
+            description="Time at which the decline steepens from decline_index_1 to decline_index_2.",
+            latex=r"t_\mathrm{break}",
+        ),
+    }
+
+    # Narrowing `**parameters` to this model's own named parameters (rather
+    # than matching the base class's generic `**parameters` exactly) is the
+    # intended pattern for every `_eval` override -- see `Lightcurve._eval`.
+    @classmethod
+    def _eval(  # type: ignore[override]
+        cls,
+        t: NDArray[np.float64],
+        *,
+        amplitude: CGSParameterValue,
+        t_peak: CGSParameterValue,
+        sigma_rise: CGSParameterValue,
+        decline_index_1: CGSParameterValue,
+        decline_index_2: CGSParameterValue,
+        t_break: CGSParameterValue,
+    ) -> NDArray[np.float64]:
+        log_rise = -0.5 * ((t - t_peak) / sigma_rise) ** 2
+
+        # `t_peak`/`t_break` are strictly positive (their priors' support
+        # excludes 0), so `t = 0` always falls on the rising branch -- the
+        # `log(0) = -inf` this produces on the discarded decline branches is
+        # a harmless masked-out value, not an error, exactly as in
+        # `GaussianRisePowerLawLightcurve._eval`.
+        with np.errstate(divide="ignore"):
+            log_decline_early = -decline_index_1 * np.log(t / t_peak)
+            log_break_offset = -decline_index_1 * np.log(t_break / t_peak)
+            log_decline_late = log_break_offset - decline_index_2 * np.log(t / t_break)
+
+        log_shape = np.where(
+            t <= t_peak,
+            log_rise,
+            np.where(t <= t_break, log_decline_early, log_decline_late),
+        )
+
+        return np.log(amplitude) + log_shape
 
 
 class BazinLightcurve(Lightcurve):

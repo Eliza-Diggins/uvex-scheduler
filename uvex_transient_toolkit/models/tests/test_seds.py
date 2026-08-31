@@ -12,6 +12,7 @@ actually being checked.
 """
 
 from uvex_transient_toolkit.models.core._base import ComposedSpectralModel, SpectralModel
+from uvex_transient_toolkit.models.kilonovae import KilonovaCoolingBlackbodySED
 from uvex_transient_toolkit.models.lfbots import LFBOTCoolingBlackbodySED
 from uvex_transient_toolkit.models.supernovae import (
     TopHatCCSNeSED,
@@ -51,6 +52,10 @@ class TestVanVelzenTDESED(SpectralModelContract):
 
 class TestLFBOTCoolingBlackbodySED(SpectralModelContract):
     model_class = LFBOTCoolingBlackbodySED
+
+
+class TestKilonovaCoolingBlackbodySED(SpectralModelContract):
+    model_class = KilonovaCoolingBlackbodySED
 
 
 def test_all_seds_covered():

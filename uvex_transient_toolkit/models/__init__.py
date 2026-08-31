@@ -4,6 +4,7 @@ Spectral modeling infrastructure for generating synthetic photometry.
 
 __all__ = [
     "core",
+    "kilonovae",
     "lfbots",
     "lightcurves",
     "spectra",
@@ -46,3 +47,9 @@ from . import lfbots
 from .lfbots import *
 
 __all__.extend(lfbots.__all__)
+
+# Imports from the kilonovae submodule.
+from . import kilonovae
+from .kilonovae import *
+
+__all__.extend(kilonovae.__all__)
