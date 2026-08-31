@@ -129,7 +129,7 @@ class SurveySchedule:
         ),
         "duration": QTableColumnSpec(
             unit=u.s,
-            validator=lambda col: np.all(col > 0 * u.s),
+            validator=lambda col: np.all(col >= 0 * u.s),
             description="Duration of the scheduled action.",
         ),
         "observer_location": QTableColumnSpec(
