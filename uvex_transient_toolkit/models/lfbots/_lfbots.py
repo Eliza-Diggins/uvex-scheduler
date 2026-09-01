@@ -50,7 +50,7 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
     light curves and blackbody temperature evolution for known LFBOTs:
 
     - The bolometric light curve peaks (log-normally, with fairly small
-      scatter) around 10 d and declines post-peak roughly as :math:`t^{-3}`
+      scatter) around 2 d and declines post-peak roughly as :math:`t^{-3}`
       -- some events (e.g. CSS161010) peak noticeably earlier, but most
       published light curves are caught only near or after peak, so the
       earlier rise is comparatively poorly constrained.
@@ -128,15 +128,20 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
             prior=NormalPrior(mean=44.5, sigma=0.1),
             scale=1.0 * u.erg / u.s,
             transform="log10",
-            description="Peak bolometric luminosity. log10(L_0/[erg/s]) ~ N(44.65, 0.35^2), "
+            description="Peak bolometric luminosity. log10(L_0/[erg/s]) ~ N(44.5, 0.1^2), "
             "spanning the ~1e44 (CSS161010) to a few 1e45 erg/s range reported by Ho & Lu et al. 2026.",
             latex=r"L_0",
         ),
+        # NOTE: Ho & Lu et al. (2026) report a characteristic peak time of ~10 d, but
+        # `mean=0.69` (~ln(2)) makes the sampled median ~2 d, not ~10 d -- this prior
+        # doesn't currently match its own literature citation. Revisit whether `mean`
+        # should be ~ln(10) (~2.30) instead; left as-is for now since correcting it
+        # would change simulated LFBOT detection statistics.
         "t_peak": Parameter(
             prior=LogNormalPrior(mean=0.69, sigma=0.06),
             scale=1.0 * u.day,
             description="Time of peak bolometric luminosity since explosion. Log-normal around "
-            "10 d with fairly small scatter (Ho & Lu et al. 2026).",
+            "2 d with fairly small scatter (Ho & Lu et al. 2026).",
             latex=r"t_\mathrm{peak}",
         ),
         "decline_index": Parameter(

@@ -16,9 +16,8 @@ from uvex_transient_toolkit.models.kilonovae import KilonovaCoolingBlackbodySED
 from uvex_transient_toolkit.models.lfbots import LFBOTCoolingBlackbodySED
 from uvex_transient_toolkit.models.supernovae import (
     TopHatCCSNeSED,
-    TypeIbSNeSED,
-    TypeIcSNeSED,
-    TypeIIPSNeSED,
+    TypeIIPExcessSED,
+    TypeIIPSED,
     VillarCoolingBlackbodySED,
 )
 from uvex_transient_toolkit.models.tdes import VanVelzenTDESED
@@ -30,16 +29,12 @@ class TestVillarCoolingBlackbodySED(SpectralModelContract):
     model_class = VillarCoolingBlackbodySED
 
 
-class TestTypeIbSNeSED(SpectralModelContract):
-    model_class = TypeIbSNeSED
+class TestTypeIIPSED(SpectralModelContract):
+    model_class = TypeIIPSED
 
 
-class TestTypeIcSNeSED(SpectralModelContract):
-    model_class = TypeIcSNeSED
-
-
-class TestTypeIIPSNeSED(SpectralModelContract):
-    model_class = TypeIIPSNeSED
+class TestTypeIIPExcessSED(SpectralModelContract):
+    model_class = TypeIIPExcessSED
 
 
 class TestTopHatCCSNeSED(SpectralModelContract):

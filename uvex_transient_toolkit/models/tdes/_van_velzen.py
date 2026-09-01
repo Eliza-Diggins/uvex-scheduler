@@ -46,10 +46,12 @@ class VanVelzenTDESED(ComposedSpectralModel):
     :class:`~uvex_transient_toolkit.models.core._base.ComposedSpectralModel` for how the two
     are combined.
 
-    The default priors are the log-normal fits to the ZTF TDE sample
-    reported by :footcite:t:`2021ApJ...908....4V` (their Section 4.1 /
-    Table 4): log-normal in :math:`L_0`, :math:`T`, :math:`\sigma`, and
-    :math:`\tau`, each parameterized here via a base-10 log transform on a
+    The default priors are informed by the log-normal fits to the ZTF TDE sample
+    reported by :footcite:t:`2021ApJ...908....4V` (their Section 4.1 / Table 4),
+    though the values below have since been hand-tuned away from those exact fits
+    and are not currently a literal reproduction of them: log-normal in
+    :math:`L_0`, :math:`T`, :math:`\sigma`, and :math:`\tau`, each parameterized
+    here via a base-10 log transform on a
     :class:`~uvex_transient_toolkit.models.core.priors.NormalPrior`.
 
     .. rubric:: Parameters
@@ -66,18 +68,18 @@ class VanVelzenTDESED(ComposedSpectralModel):
        * - ``amplitude``
          - :math:`L_0`
          - Peak bolometric luminosity, L_0 = L_bol(t_peak). log10(L_0/[erg/s])
-           ~ N(44, 0.2^2).
+           ~ N(43.8, 0.2^2).
        * - ``sigma_rise``
          - :math:`\sigma`
-         - Gaussian width of the pre-peak rise. log10(sigma/day) ~ N(1.0,
-           0.22^2).
+         - Gaussian width of the pre-peak rise. log10(sigma/day) ~ N(1.3,
+           0.3^2).
        * - ``tau_decline``
          - :math:`\tau`
          - Exponential decline timescale after peak. log10(tau/day) ~
-           N(1.7, 0.2^2).
+           N(2, 0.1^2).
        * - ``temperature``
          - :math:`T`
-         - Photospheric blackbody temperature. log10(T/K) ~ N(4.3, 0.12^2).
+         - Photospheric blackbody temperature. log10(T/K) ~ N(4.3, 0.1^2).
 
     References
     ----------
@@ -91,28 +93,28 @@ class VanVelzenTDESED(ComposedSpectralModel):
             prior=NormalPrior(mean=43.8, sigma=0.2),
             scale=1.0 * u.erg / u.s,
             transform="log10",
-            description="Peak bolometric luminosity, L_0 = L_bol(t_peak). log10(L_0/[erg/s]) ~ N(44, 0.2^2).",
+            description="Peak bolometric luminosity, L_0 = L_bol(t_peak). log10(L_0/[erg/s]) ~ N(43.8, 0.2^2).",
             latex=r"L_0",
         ),
         "temperature": Parameter(
             prior=NormalPrior(mean=4.3, sigma=0.1),
             scale=1.0 * u.K,
             transform="log10",
-            description="Photospheric blackbody temperature. log10(T/K) ~ N(4.3, 0.12^2).",
+            description="Photospheric blackbody temperature. log10(T/K) ~ N(4.3, 0.1^2).",
             latex=r"T",
         ),
         "sigma_rise": Parameter(
             prior=NormalPrior(mean=1.3, sigma=0.3),
             scale=1.0 * u.day,
             transform="log10",
-            description="Gaussian width of the pre-peak rise. log10(sigma/day) ~ N(1.0, 0.22^2).",
+            description="Gaussian width of the pre-peak rise. log10(sigma/day) ~ N(1.3, 0.3^2).",
             latex=r"\sigma",
         ),
         "tau_decline": Parameter(
             prior=NormalPrior(mean=2, sigma=0.1),
             scale=1.0 * u.day,
             transform="log10",
-            description="Exponential decline timescale after peak. log10(tau/day) ~ N(1.7, 0.2^2).",
+            description="Exponential decline timescale after peak. log10(tau/day) ~ N(2, 0.1^2).",
             latex=r"\tau",
         ),
     }

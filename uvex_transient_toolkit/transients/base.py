@@ -62,7 +62,7 @@ class TransientBase(ABC):
     # ------------------------------ #
     # Class Variables                #
     # ------------------------------ #
-    # Concrete subclasses (e.g. `CoreCollapseSNe`) must override both of these with
+    # Concrete subclasses (e.g. `TypeIIPSNe`) must override both of these with
     # real values.
     DEFAULT_MODEL: ClassVar[Optional[type[SpectralModel]]] = None
     """type[SpectralModel]: The SED model class associated with this transient type. Must be set by subclasses."""

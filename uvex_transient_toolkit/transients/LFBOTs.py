@@ -30,7 +30,7 @@ class LuminousFastBlueOpticalTransient(ExtragalacticTransient):
 
     DEFAULT_MODEL = LFBOTCoolingBlackbodySED
     DEFAULT_DURATION = 100 * u.day
-    DEFAULT_Z_LIM = 1
+    DEFAULT_Z_LIM = 4
 
     def event_rate(self, z: Union[float, NDArray[np.float64]]) -> Union[float, NDArray[np.float64]]:
         """

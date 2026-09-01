@@ -4,11 +4,11 @@ Composite supernova SED models.
 
 __all__ = [
     "TopHatCCSNeSED",
-    "TypeIbSNeSED",
-    "TypeIcSNeSED",
-    "TypeIIPSNeSED",
+    "TypeIIPExcessSED",
+    "TypeIIPSED",
     "VillarCoolingBlackbodySED",
 ]
 
+from ._IIp_excess import TypeIIPExcessSED, TypeIIPSED
 from ._tophat import TopHatCCSNeSED
-from ._villar import TypeIbSNeSED, TypeIcSNeSED, TypeIIPSNeSED, VillarCoolingBlackbodySED
+from ._villar import VillarCoolingBlackbodySED
