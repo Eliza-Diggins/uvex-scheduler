@@ -80,7 +80,7 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
     """
     _DEFAULT_PARAMETERS: ClassVar[dict[str, Parameter]] = {
         "amplitude": Parameter(
-            prior=NormalPrior(mean=44.5, sigma=0.1),
+            prior=NormalPrior(mean=44.5, sigma=0.5),
             scale=1.0 * u.erg / u.s,
             transform="log10",
             description="Peak bolometric luminosity. log10(L_0/[erg/s]) ~ N(44.5, 0.1^2), "
@@ -88,8 +88,9 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
             latex=r"L_0",
         ),
         "t_peak": Parameter(
-            prior=LogNormalPrior(mean=0.69, sigma=0.06),
+            prior=NormalPrior(mean=np.log10(3), sigma=0.1),
             scale=1.0 * u.day,
+            transform="log10",
             description="Time of peak bolometric luminosity since explosion. Log-normal around "
             "2 d with fairly small scatter (Ho & Lu et al. 2026).",
             latex=r"t_\mathrm{peak}",
@@ -102,7 +103,7 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
             latex=r"\alpha_\mathrm{decline}",
         ),
         "T0": Parameter(
-            prior=LogNormalPrior(mean=0.0, sigma=0.1),
+            prior=LogNormalPrior(mean=0.0, sigma=0.15),
             scale=2e4 * u.K,
             description="Photospheric temperature at t=0 (the T(t) -> T0 limit, not literally T at peak).",
             latex=r"T_0",
