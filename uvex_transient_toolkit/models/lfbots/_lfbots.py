@@ -45,37 +45,6 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
     which has the correct :math:`T \to T_\mathrm{floor} + (T_0 -
     T_\mathrm{floor})(t/t_\mathrm{peak})^{-\alpha_T}` power-law asymptote at late times.
 
-    Both this model's default priors and its choice of light curve/cooling-law
-    shape are informed by Ho & Lu et al. (2026)'s sample of bolometric
-    light curves and blackbody temperature evolution for known LFBOTs:
-
-    - The bolometric light curve peaks (log-normally, with fairly small
-      scatter) around 2 d and declines post-peak roughly as :math:`t^{-3}`
-      -- some events (e.g. CSS161010) peak noticeably earlier, but most
-      published light curves are caught only near or after peak, so the
-      earlier rise is comparatively poorly constrained.
-    - The blackbody temperature declines post-peak roughly as
-      :math:`t^{-1/3}` for most events (e.g. AT2018cow); CSS161010 was
-      closer to constant temperature -- both are within this cooling law's
-      :math:`\alpha_T` range.
-    - Peak bolometric luminosities span roughly :math:`10^{44}` erg/s
-      (CSS161010) to a few :math:`\times 10^{45}` erg/s.
-
-    Because the blackbody shape is normalized independently of luminosity,
-    the bolometric and spectral components remain exactly separable:
-
-    .. math::
-
-        \int L_\nu(\nu,t)\,d\nu = L_\mathrm{bol}(t).
-
-    Consequently, :meth:`_eval_bolometric` delegates directly to
-    :class:`~uvex_transient_toolkit.models.lightcurves.generic.GaussianRisePowerLawLightcurve`,
-    which fixes the Gaussian rise width at :math:`t_\mathrm{peak}/5` rather
-    than treating it as a separate free parameter, while :meth:`_eval_spectrum` evaluates
-    :class:`~uvex_transient_toolkit.models.spectra.thermal.BlackbodySpectrum` at
-    the time-dependent temperature :math:`T(t)`. No numerical frequency
-    integration is required to recover the bolometric luminosity.
-
     .. rubric:: Parameters
 
     The model parameters are summarized below.
@@ -108,21 +77,7 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
        * - ``alpha_T``
          - :math:`\alpha_T`
          - Late-time photospheric cooling power-law index.
-
-    Notes
-    -----
-    ``T0``/``T_floor`` are broad, phenomenological starting points -- unlike
-    ``t_peak``/``decline_index``/``alpha_T``, Ho & Lu et al. (2026) does not
-    report characteristic absolute temperature values for this sample.
-
-    The photospheric cooling timescale is not a separate free parameter --
-    it is fixed to the light curve's own ``t_peak``, the same coupling used
-    for the Gaussian rise width (see above).
-
-    The temperature law assumes :math:`T_0 > T_\mathrm{floor}` for a cooling
-    photosphere, although this ordering is not enforced by the model itself.
     """
-
     _DEFAULT_PARAMETERS: ClassVar[dict[str, Parameter]] = {
         "amplitude": Parameter(
             prior=NormalPrior(mean=44.5, sigma=0.1),
@@ -132,11 +87,6 @@ class LFBOTCoolingBlackbodySED(SpectralModel):
             "spanning the ~1e44 (CSS161010) to a few 1e45 erg/s range reported by Ho & Lu et al. 2026.",
             latex=r"L_0",
         ),
-        # NOTE: Ho & Lu et al. (2026) report a characteristic peak time of ~10 d, but
-        # `mean=0.69` (~ln(2)) makes the sampled median ~2 d, not ~10 d -- this prior
-        # doesn't currently match its own literature citation. Revisit whether `mean`
-        # should be ~ln(10) (~2.30) instead; left as-is for now since correcting it
-        # would change simulated LFBOT detection statistics.
         "t_peak": Parameter(
             prior=LogNormalPrior(mean=0.69, sigma=0.06),
             scale=1.0 * u.day,
