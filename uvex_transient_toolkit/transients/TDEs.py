@@ -7,7 +7,7 @@ from astropy import units as u
 from astropy.units import Quantity
 from numpy.typing import NDArray
 
-from uvex_transient_toolkit.models.tdes import VanVelzenTDESED
+from uvex_transient_toolkit.models.tdes import VanVelzenTDESED, AlushStoneTDESED
 from .base import ExtragalacticTransient
 
 # Yao et al. 2023 value, taken as constant with redshift: 3.1e-7 Mpc^-3 yr^-1.
@@ -24,7 +24,7 @@ class TidalDisruptionEvent(ExtragalacticTransient):
     3.1e-7 Mpc^-3 yr^-1 out to z=1 (Yao et al. 2023), and a 200-day duration window.
     """
 
-    DEFAULT_MODEL = VanVelzenTDESED
+    DEFAULT_MODEL = AlushStoneTDESED
     DEFAULT_DURATION = 200 * u.day
     DEFAULT_Z_LIM = 1
 
